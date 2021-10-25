@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jenkins-swarm-client.fullname" . }}
+  labels:
+    {{- include "jenkins-swarm-client.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "jenkins-swarm-client.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "jenkins-swarm-client.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "jenkins-swarm-client.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: JENKINS_MASTER_ADDRESS
+              value: {{ .Values.jenkinsSwarmConfig.master }}
+            - name: JENKINS_MASTER_IP
+              value: {{ .Values.jenkinsSwarmConfig.masterIP }}
+            - name: JENKINS_SWARM_USERNAME
+              value: {{ .Values.jenkinsSwarmConfig.username }}
+            - name: JENKINS_SWARM_PASSWORD
+              value: {{ .Values.jenkinsSwarmConfig.password }}
+            - name: JENKINS_SWARM_EXECUTOR_NAME
+              value: {{ .Values.jenkinsSwarmConfig.executorName }}
+            - name: JENKINS_SWARM_LABELS
+              value: {{ .Values.jenkinsSwarmConfig.labels }}
+            - name: JENKINS_SWARM_OTHER_OPTIONS
+              value: {{ .Values.jenkinsSwarmConfig.otherOptions }}
+          
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
